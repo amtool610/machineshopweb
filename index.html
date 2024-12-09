@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Machine Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase Configuration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+        from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWDk01Ri3_bqTnmFMJ6cexmE8pLSd-O-8",
+            authDomain: "machineshopquotepage.firebaseapp.com",
+            projectId: "machineshopquotepage",
+            storageBucket: "machineshopquotepage.firebasestorage.app",
+            messagingSenderId: "318150130321",
+            appId: "1:318150130321:web:ebce224de4a409ec8a9d30"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+
+        // Modal elements
+        const modal = document.getElementById('adminModal');
+        const adminLink = document.getElementById('adminLink');
+        const closeBtn = document.querySelector('.close');
+        const loginForm = document.getElementById('loginForm');
+        const adminDashboard = document.getElementById('adminDashboard');
+
+        // Modal controls
+        adminLink.onclick = () => modal.style.display = "block";
+        closeBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (e) => {
+            if (e.target == modal) modal.style.display = "none";
+        }
+
+        // Handle admin login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                modal.style.display = "none";
+                loginForm.reset();
+            } catch (error) {
+                console.error('Login error:', error.message);
+                alert('Login failed: ' + error.message);
+            }
+        });
+
+        // Handle auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                adminDashboard.style.display = "block";
+                adminLink.textContent = "Logout";
+                adminLink.onclick = () => signOut(auth);
+                loadQuotes();
+            } else {
+                adminDashboard.style.display = "none";
+                adminLink.textContent = "Admin";
+                adminLink.onclick = () => modal.style.display = "block";
+            }
+        });
+
+        // Load quotes from Realtime Database
+        function loadQuotes() {
+            const quotesRef = ref(database, 'quotes');
+            
+            onValue(quotesRef, (snapshot) => {
+                const quotesList = document.getElementById('quotesList');
+                quotesList.innerHTML = '';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const quoteData = childSnapshot.val();
+                    const quoteElement = document.createElement('div');
+                    quoteElement.className = 'quote-item';
+                    quoteElement.innerHTML = `
+                        <h3>${quoteData.companyName}</h3>
+                        <p>Contact: ${quoteData.contactName}</p>
+                        <p>Email: ${quoteData.email}</p>
+                        <p>Phone: ${quoteData.phone}</p>
+                        <p>Project Details: ${quoteData.projectDetails}</p>
+                        <p>Date: ${new Date(quoteData.timestamp).toLocaleString()}</p>
+                    `;
+                    quotesList.appendChild(quoteElement);
+                });
+            });
+        }
+
+        // Handle quote form submission
+        const quoteForm = document.getElementById('quoteForm');
+        if (quoteForm) {
+            quoteForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const formData = {
+                        companyName: quoteForm.elements['companyName'].value,
+                        contactName: quoteForm.elements['contactName'].value,
+                        email: quoteForm.elements['email'].value,
+                        phone: quoteForm.elements['phone'].value,
+                        projectDetails: quoteForm.elements['projectDetails'].value,
+                        timestamp: serverTimestamp()
+                    };
+
+                    const quotesRef = ref(database, 'quotes');
+                    await push(quotesRef, formData);
+                    quoteForm.reset();
+                    alert('Quote request submitted successfully!');
+                } catch (error) {
+                    console.error('Error submitting quote:', error);
+                    alert('Error submitting quote. Please try again.');
+                }
+            });
+        }
+
+        // Add customer reviews
+        const reviews = [
+            {
+                name: "David Chen",
+                company: "MedTech Innovations",
+                rating: 5,
+                text: "Outstanding precision on our medical device components. Their attention to detail and quality control is exceptional. Consistently meets our strict tolerances."
+            },
+            {
+                name: "Sarah Johnson",
+                company: "Aerospace Dynamics",
+                rating: 5,
+                text: "We've been working with them for over 5 years. Their expertise in aerospace components is unmatched. Perfect execution on complex parts every time."
+            },
+            {
+                name: "Michael Rodriguez",
+                company: "Industrial Solutions Inc.",
+                rating: 5,
+                text: "Excellent service and exceptional quality. Their team helped us optimize our designs for manufacturing, saving both time and costs."
+            },
+            {
+                name: "Emily Thompson",
+                company: "Defense Systems Ltd.",
+                rating: 5,
+                text: "Reliable partner for precision components. Their quality control and documentation are impeccable. Always delivers on schedule."
+            },
+            {
+                name: "Robert Wilson",
+                company: "Automotive Excellence",
+                rating: 5,
+                text: "Top-notch machining capabilities. They handle our high-volume orders with consistent quality and on-time delivery."
+            },
+            {
+                name: "Jennifer Lee",
+                company: "Biotech Solutions",
+                rating: 5,
+                text: "Incredible attention to detail on our specialized medical equipment parts. Their expertise in complex geometries is impressive."
+            },
+            {
+                name: "James Anderson",
+                company: "Precision Robotics",
+                rating: 5,
+                text: "Outstanding work on our custom automation components. Their team's technical knowledge and problem-solving skills are exceptional."
+            },
+            {
+                name: "Lisa Martinez",
+                company: "Energy Systems Corp",
+                rating: 5,
+                text: "Excellent partner for our power generation components. Their quality and reliability are consistently outstanding."
+            }
+        ];
+
+        const reviewCarousel = document.querySelector('.review-carousel');
+        reviews.forEach(review => {
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'review-card';
+            reviewCard.innerHTML = `
+                <h3>${review.name}</h3>
+                <p>${review.company}</p>
+                <div class="stars">${'★'.repeat(review.rating)}</div>
+                <p>${review.text}</p>
+            `;
+            reviewCarousel.appendChild(reviewCard);
+        }); 
+
+        // Mobile menu toggle
+        const menuToggle = document.createElement('div');
+        menuToggle.className = 'menu-toggle';
+        menuToggle.innerHTML = `
+            <span></span>
+            <span></span>
+            <span></span>
+        `;
+
+        const nav = document.querySelector('nav');
+        nav.insertBefore(menuToggle, nav.firstChild);
+
+        const navLinks = document.querySelector('.nav-links');
+        menuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            menuToggle.classList.toggle('active');
+        });
+
+        // Close menu when clicking a link
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                menuToggle.classList.remove('active');
+            });
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!nav.contains(e.target)) {
+                navLinks.classList.remove('active');
+                menuToggle.classList.remove('active');
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Add admin login modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Login</h2>
+            <form id="loginForm">
+                <input type="email" id="adminEmail" placeholder="Email" required>
+                <input type="password" id="adminPassword" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <nav>
+        <div class="logo">Precision Machine Shop</div>
+        <div class="nav-links">
+            <a href="#machines">Our Machines</a>
+            <a href="#about">About Us</a>
+            <a href="#clients">Clients</a>
+            <a href="#reviews">Reviews</a>
+            <a href="#quote">Get Quote</a>
+            <a href="#" id="adminLink">Admin</a>
+        </div>
+    </nav>
+
+    <section id="machines" class="machine-showcase">
+        <h2>Our Equipment</h2>
+        <div class="machine-grid">
+            <div class="machine-card">
+                <img src="1.png" alt="Machine 1">
+                <p>Precision CNC Machine</p>
+            </div>
+            <div class="machine-card">
+                <img src="2.png" alt="Machine 2">
+                <p>Advanced Milling Center</p>
+            </div>
+            <div class="machine-card">
+                <img src="3.png" alt="Machine 3">
+                <p>5-Axis CNC System</p>
+            </div>
+            <div class="machine-card">
+                <img src="4.png" alt="Machine 4">
+                <p>Precision Lathe</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="experience">
+        <h2>25+ Years of Excellence</h2>
+        <p>With over 25 years of excellence, our machine shop has been at the forefront of precision engineering and manufacturing. We specialize in delivering high-quality machined components, utilizing advanced CNC technology and a team of skilled professionals. Our commitment to precision, innovation, and customer satisfaction has earned us a reputation for reliability and excellence across diverse industries. Whether it's prototyping or large-scale production, we pride ourselves on providing tailored solutions that meet the highest standards.</p>
+        
+        <div class="specialties">
+            <div class="specialty">
+                <h3>Prototyping</h3>
+                <p>Rapid prototyping with quick turnaround times</p>
+            </div>
+            <div class="specialty">
+                <h3>Production</h3>
+                <p>High-volume manufacturing capabilities</p>
+            </div>
+            <div class="specialty">
+                <h3>Custom Solutions</h3>
+                <p>Tailored engineering solutions</p>
+            </div>
+        </div>
+
+        <!-- Add Products Showcase -->
+        <h3 class="showcase-title">Our Products</h3>
+        <div class="products-showcase">
+            <div class="product-item">
+                <img src="product1.png" alt="Precision Component">
+                <div class="product-info">
+                    <h4>Medical Components</h4>
+                    <p>High-precision medical device parts</p>
+                </div>
+            </div>
+            <div class="product-item">
+                <img src="product2.png" alt="Aerospace Part">
+                <div class="product-info">
+                    <h4>Aerospace Parts</h4>
+                    <p>Aircraft-grade components</p>
+                </div>
+            </div>
+            <div class="product-item">
+                <img src="product3.png" alt="Industrial Component">
+                <div class="product-info">
+                    <h4>Industrial Equipment</h4>
+                    <p>Heavy-duty machine parts</p>
+                </div>
+            </div>
+            <div class="product-item">
+                <img src="product4.png" alt="Custom Part">
+                <div class="product-info">
+                    <h4>Custom Solutions</h4>
+                    <p>Specialized machined components</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="clients" class="clients">
+        <h2>Our Trusted Partners</h2>
+        <div class="client-logos">
+            <div class="logo-slide">
+                <!-- First set -->
+                <img src="tesla.png" alt="Tesla">
+                <img src="fisher.png" alt="Fisher">
+                <img src="air.png" alt="Air">
+                <img src="stryker.png" alt="Stryker">
+                <!-- Duplicate set for seamless loop -->
+                <img src="tesla.png" alt="Tesla">
+                <img src="fisher.png" alt="Fisher">
+                <img src="air.png" alt="Air">
+                <img src="stryker.png" alt="Stryker">
+            </div>
+        </div>
+    </section>
+
+    <section id="reviews" class="reviews">
+        <h2>Customer Reviews</h2>
+        <div class="review-carousel">
+            <!-- Review cards will be added here -->
+        </div>
+    </section>
+
+    <section id="quote" class="quote-form">
+        <h2>Request a Quote</h2>
+        <form id="quoteForm">
+            <input type="text" name="companyName" placeholder="Company Name" required>
+            <input type="text" name="contactName" placeholder="Contact Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="tel" name="phone" placeholder="Phone">
+            <textarea name="projectDetails" placeholder="Project Details" required></textarea>
+            <button type="submit">Submit Quote Request</button>
+        </form>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Precision Machine Shop. All rights reserved.</p>
+    </footer>
+
+    <!-- Add admin dashboard section (initially hidden) -->
+    <section id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <h2>Admin Dashboard</h2>
+        <div id="quotesList" class="quotes-list">
+            <!-- Quotes will be loaded here -->
+        </div>
+    </section>
+</body>
+</html> 
