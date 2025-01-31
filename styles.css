@@ -681,4 +681,18 @@ footer {
     .nav-links {
         display: flex !important;
     }
+}
+
+.delete-quote {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.delete-quote:hover {
+    background-color: #cc0000;
 } 
