@@ -48,6 +48,21 @@ section {
     background: #1a1a1a;
 }
 
+#usa {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    margin: 0 auto;
+}
+
+#usa img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
 #about {
     background: #242424;
 }
@@ -143,11 +158,11 @@ section {
 }
 
 @keyframes slide {
-    from {
+    0% {
         transform: translateX(0);
     }
-    to {
-        transform: translateX(-50%);
+    100% {
+        transform: translateX(calc(-100% - 60px)); /* Account for the gap */
     }
 }
 
