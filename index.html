@@ -3,17 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    American Tooling and Machining Co</title>
+    <title>American Tooling and Machining Co</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-GVXE9JL6K1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <style>
+        /* Catalog Section Styles */
+        .catalog {
+            padding: 4rem 2rem;
+            background: #000000;
+        }
 
-  gtag('config', 'G-GVXE9JL6K1');
-</script>
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .catalog-item {
+            background: rgb(0, 0, 0);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .catalog-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .catalog-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .catalog-item h3 {
+            padding: 1rem;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .catalog-item p {
+            padding: 0 1rem 1rem;
+            margin: 0;
+            color: #666;
+        }
+
+        /* Catalog Management Form Styles */
+        .catalog-management {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .catalog-management h3 {
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .catalog-management form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .catalog-management input,
+        .catalog-management textarea {
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .catalog-management textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .catalog-management button {
+            background: #00b4d8;
+            color: white;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .catalog-management button:hover {
+            background: #0096b7;
+        }
+    </style>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GVXE9JL6K1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GVXE9JL6K1');
+    </script>
     <!-- Firebase Configuration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
@@ -75,6 +168,7 @@
                 adminLink.textContent = "Logout";
                 adminLink.onclick = () => signOut(auth);
                 loadQuotes();
+                loadCatalog();
             } else {
                 adminDashboard.style.display = "none";
                 adminLink.textContent = "Admin";
@@ -102,25 +196,59 @@
                         <p>Phone: ${quoteData.phone}</p>
                         <p>Project Details: ${quoteData.projectDetails}</p>
                         <p>Date: ${new Date(quoteData.timestamp).toLocaleString()}</p>
-                        <!-- <button class="delete-quote" data-quote-id="${quoteId}">Delete Quote</button> -->
                     `;
                     quotesList.appendChild(quoteElement);
-
-                    // Add delete event listener
-                    const deleteButton = quoteElement.querySelector('.delete-quote');
-                    deleteButton.addEventListener('click', async () => {
-                        if (confirm('Are you sure you want to delete this quote?')) {
-                            try {
-                                const quoteRef = ref(database, `quotes/${quoteId}`);
-                                await remove(quoteRef);
-                                alert('Quote deleted successfully!');
-                            } catch (error) {
-                                console.error('Error deleting quote:', error);
-                                alert('Error deleting quote. Please try again.');
-                            }
-                        }
-                    });
                 });
+            });
+        }
+
+        // Add catalog functionality
+        const catalogRef = ref(database, 'catalog');
+        
+        // Load catalog items
+        function loadCatalog() {
+            const catalogContainer = document.getElementById('catalogItems');
+            if (!catalogContainer) return;
+            
+            onValue(catalogRef, (snapshot) => {
+                catalogContainer.innerHTML = '';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const item = childSnapshot.val();
+                    const itemId = childSnapshot.key;
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'catalog-item';
+                    itemElement.innerHTML = `
+                        <img src="${item.imageUrl}" alt="${item.name}">
+                        <h3>${item.name}</h3>
+                        <p>${item.description}</p>
+                    `;
+                    catalogContainer.appendChild(itemElement);
+                });
+            });
+        }
+
+        // Handle catalog form submission
+        const catalogForm = document.getElementById('catalogForm');
+        if (catalogForm) {
+            catalogForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const formData = {
+                        name: catalogForm.elements['itemName'].value,
+                        description: catalogForm.elements['itemDescription'].value,
+                        imageUrl: catalogForm.elements['itemImageUrl'].value,
+                        timestamp: serverTimestamp()
+                    };
+
+                    await push(catalogRef, formData);
+                    catalogForm.reset();
+                    alert('Catalog item added successfully!');
+                } catch (error) {
+                    console.error('Error adding catalog item:', error);
+                    alert('Error adding catalog item. Please try again.');
+                }
             });
         }
 
@@ -272,6 +400,7 @@
             <a href="#about">About Us</a>
             <a href="#clients">Clients</a>
             <a href="#reviews">Reviews</a>
+            <a href="#catalog">Catalog</a>
             <a href="#quote">Get Quote</a>
             <a href="#" id="adminLink">Admin</a>
         </div>
@@ -397,13 +526,19 @@
         </div>
     </section>
 
+    <section id="catalog" class="catalog">
+        <h2>Our Catalog</h2>
+        <div id="catalogItems" class="catalog-grid">
+            <!-- Catalog items will be loaded here -->
+        </div>
+    </section>
+
     <section id="quote" class="quote-form">
-        <h2>
-            email: amtool2012@gmail.com</h2>
-            <h2>call: 510-980-8316</h2>
+        <h2>email: amtool2012@gmail.com</h2>
+        <h2>call: 510-980-8316</h2>
         <h2>address: 45554 Industrial Place, #6
 Fremont, CA 94538</h2>
-            <h2>Request a Quote</h2>
+        <h2>Request a Quote</h2>
         <form id="quoteForm">
             <input type="text" name="companyName" placeholder="Company Name" required>
             <input type="text" name="contactName" placeholder="Contact Name" required>
@@ -433,9 +568,21 @@ Fremont, CA 94538</h2>
             </a>
         </div>
         <h2>Admin Dashboard</h2>
+        
+        <!-- Add Catalog Management Form -->
+        <div class="catalog-management">
+            <h3>Add New Catalog Item</h3>
+            <form id="catalogForm">
+                <input type="text" name="itemName" placeholder="Item Name" required>
+                <textarea name="itemDescription" placeholder="Item Description" required></textarea>
+                <input type="url" name="itemImageUrl" placeholder="Image URL" required>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+
         <div id="quotesList" class="quotes-list">
             <!-- Quotes will be loaded here -->
         </div>
     </section>
 </body>
-</html> 
+</html>
