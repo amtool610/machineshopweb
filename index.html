@@ -145,20 +145,8 @@
     <!-- Firebase Configuration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { 
-            getDatabase, 
-    ref, 
-    get, 
-    query, 
-    orderByChild, 
-    startAt, 
-    endAt, 
-    limitToFirst,
-    onValue,
-    push,
-    serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+        import { getDatabase, ref, onValue, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
         from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 
        // Firebase Configuration
@@ -253,191 +241,61 @@ function loadQuotes() {
 const catalogRef = ref(database, 'catalog');
 
 // Load catalog items with search functionality
-// Catalog functionality with pagination and efficient searching
 function loadCatalog() {
     const catalogContainer = document.getElementById('catalogItems');
     const searchInput = document.getElementById('catalogSearch');
     const searchButton = document.getElementById('searchButton');
+    let catalogItems = [];
     
-    // Pagination settings
-    let currentPage = 1;
-    const itemsPerPage = 20;
-    let lastSearchTerm = '';
-    let isLoading = false;
-    
-    // Function to load items with pagination and search
-    async function loadItems(searchTerm = '', page = 1) {
-        if (isLoading) return;
-        isLoading = true;
-        
-        try {
-            // Show loading indicator
-            if (page === 1) {
-                catalogContainer.innerHTML = '<div class="loading">Loading...</div>';
-            }
-            
-           // Build the query
-        let baseQuery = catalogRef;
-        
-        // Add search filter if search term exists
-        if (searchTerm) {
-            baseQuery = query(
-                baseQuery,
-                orderByChild('name'),
-                startAt(searchTerm),
-                endAt(searchTerm + '\uf8ff'),
-                limitToFirst(itemsPerPage * page)
-            );
-        } else {
-            baseQuery = query(
-                baseQuery,
-                limitToFirst(itemsPerPage * page)
-            );
-        }
-            
-           // Get the data
-        const snapshot = await get(baseQuery);
-            
-            // Clear container only on first page load
-            if (page === 1) {
-                catalogContainer.innerHTML = '';
-            }
-            
-            // Handle no results
-            if (!snapshot.exists()) {
-                if (page === 1) {
-                    catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">No results found</p>';
-                }
-                return;
-            }
-            
-            // Process and display items
-            snapshot.forEach((childSnapshot) => {
-                const item = childSnapshot.val();
-                const itemElement = document.createElement('div');
-                itemElement.className = 'catalog-item';
-                
-                // Create image with lazy loading
-                const img = document.createElement('img');
-                img.loading = 'lazy';
-                img.src = item.imageUrl;
-                img.alt = item.name;
-                
-                // Add error handling for images
-                img.onerror = () => {
-                    img.src = 'placeholder.png'; // Fallback image
-                };
-                
-                itemElement.innerHTML = `
-                    <h3>${item.name}</h3>
-                    <p>${item.description}</p>
-                `;
-                itemElement.insertBefore(img, itemElement.firstChild);
-                
-                catalogContainer.appendChild(itemElement);
-            });
-            
-            // Add load more button if there might be more results
-            if (snapshot.size === itemsPerPage * page) {
-                // Remove existing load more button if it exists
-                const existingBtn = document.querySelector('.load-more-btn');
-                if (existingBtn) {
-                    existingBtn.remove();
-                }
-                
-                const loadMoreBtn = document.createElement('button');
-                loadMoreBtn.className = 'load-more-btn';
-                loadMoreBtn.textContent = 'Load More';
-                loadMoreBtn.onclick = () => {
-                    currentPage++;
-                    loadItems(lastSearchTerm, currentPage);
-                };
-                catalogContainer.appendChild(loadMoreBtn);
-            }
-            
-        } catch (error) {
-            console.error('Error loading catalog items:', error);
-            catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">Error loading items. Please try again.</p>';
-        } finally {
-            isLoading = false;
-        }
-    }
+    onValue(catalogRef, (snapshot) => {
+        catalogItems = [];
+        snapshot.forEach((childSnapshot) => {
+            const item = childSnapshot.val();
+            item.id = childSnapshot.key;
+            catalogItems.push(item);
+        });
+        // Initially hide all items
+        catalogContainer.innerHTML = '';
+    });
 
-    // Debounce function to prevent too many search requests
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    // Search functionality with debouncing
-    const debouncedSearch = debounce(() => {
+    // Search functionality
+    searchButton.addEventListener('click', () => {
         const searchTerm = searchInput.value.toLowerCase().trim();
-        lastSearchTerm = searchTerm;
-        currentPage = 1;
-        loadItems(searchTerm);
-    }, 300);
+        catalogContainer.innerHTML = '';
+        
+        if (!searchTerm) {
+            return; // Don't show results if search is empty
+        }
 
-    // Event listeners
-    searchButton.addEventListener('click', debouncedSearch);
-    
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            debouncedSearch();
+        const filteredItems = catalogItems.filter(item => 
+            item.name.toLowerCase().includes(searchTerm) || 
+            item.description.toLowerCase().includes(searchTerm)
+        );
+
+        filteredItems.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'catalog-item';
+            itemElement.innerHTML = `
+                <img src="${item.imageUrl}" alt="${item.name}">
+                <h3>${item.name}</h3>
+                <p>${item.description}</p>
+            `;
+            catalogContainer.appendChild(itemElement);
+        });
+
+        if (filteredItems.length === 0) {
+            catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">No results found</p>';
         }
     });
 
-    // Add input event for real-time search (optional)
-    searchInput.addEventListener('input', debouncedSearch);
-
-    // Initial load
-    loadItems();
+    // Allow search on Enter key
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchButton.click();
+        }
+    });
 }
 
-// Add this CSS to your styles
-const style = document.createElement('style');
-style.textContent = `
-    .loading {
-        text-align: center;
-        color: white;
-        padding: 20px;
-        grid-column: 1/-1;
-    }
-    
-    .load-more-btn {
-        background: #00b4d8;
-        color: white;
-        padding: 12px 24px;
-        border: none;
-        border-radius: 24px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background 0.3s ease;
-        margin: 20px auto;
-        display: block;
-        grid-column: 1/-1;
-    }
-    
-    .load-more-btn:hover {
-        background: #0096b7;
-    }
-    
-    .catalog-item img {
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    
-    .catalog-item img.loaded {
-        opacity: 1;
-    }
-`;
-document.head.appendChild(style);
 // Handle catalog form submission
 const catalogForm = document.getElementById('catalogForm');
 if (catalogForm) {
