@@ -6,6 +6,41 @@
     <title>American Tooling and Machining Co</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        .search-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    text-align: center;
+}
+
+.search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 24px;
+    font-size: 16px;
+    outline: none;
+}
+
+.search-box button {
+    padding: 12px 24px;
+    background: #00b4d8;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s ease;
+}
+
+.search-box button:hover {
+    background: #0096b7;
+}
         /* Catalog Section Styles */
         .catalog {
             padding: 4rem 2rem;
@@ -114,36 +149,6 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
         from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
 
-<<<<<<< HEAD
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDGOSPdvAQpOCMkbrXX3W2Gkxnb_zzVM8M",
-            authDomain: "companywebsite-a1f7f.firebaseapp.com",
-            databaseURL: "https://companywebsite-a1f7f-default-rtdb.firebaseio.com",
-            projectId: "companywebsite-a1f7f",
-            storageBucket: "companywebsite-a1f7f.firebasestorage.app",
-            messagingSenderId: "424197049927",
-            appId: "1:424197049927:web:61dcdbe5b70100b24eeb62"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const auth = getAuth(app);
-
-        // Modal elements
-        const modal = document.getElementById('adminModal');
-        const adminLink = document.getElementById('adminLink');
-        const closeBtn = document.querySelector('.close');
-        const loginForm = document.getElementById('loginForm');
-        const adminDashboard = document.getElementById('adminDashboard');
-
-        // Modal controls
-        adminLink.onclick = () => modal.style.display = "block";
-        closeBtn.onclick = () => modal.style.display = "none";
-        window.onclick = (e) => {
-            if (e.target == modal) modal.style.display = "none";
-=======
        // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDGOSPdvAQpOCMkbrXX3W2Gkxnb_zzVM8M",
@@ -280,42 +285,9 @@ function loadCatalog() {
 
         if (filteredItems.length === 0) {
             catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">No results found</p>';
->>>>>>> parent of 6c99553 (uu)
         }
+    });
 
-<<<<<<< HEAD
-        // Handle admin login
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('adminEmail').value;
-            const password = document.getElementById('adminPassword').value;
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                modal.style.display = "none";
-                loginForm.reset();
-            } catch (error) {
-                console.error('Login error:', error.message);
-                alert('Login failed: ' + error.message);
-            }
-        });
-
-        // Handle auth state changes
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                adminDashboard.style.display = "block";
-                adminLink.textContent = "Logout";
-                adminLink.onclick = () => signOut(auth);
-                loadQuotes();
-                loadCatalog();
-            } else {
-                adminDashboard.style.display = "none";
-                adminLink.textContent = "Admin";
-                adminLink.onclick = () => modal.style.display = "block";
-            }
-        });
-=======
     // Allow search on Enter key
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -363,209 +335,118 @@ if (quoteForm) {
                 projectDetails: quoteForm.elements['projectDetails'].value,
                 timestamp: serverTimestamp()
             };
->>>>>>> parent of 6c99553 (uu)
 
-        // Load quotes from Realtime Database
-        function loadQuotes() {
             const quotesRef = ref(database, 'quotes');
-            
-            onValue(quotesRef, (snapshot) => {
-                const quotesList = document.getElementById('quotesList');
-                quotesList.innerHTML = '';
-                
-                snapshot.forEach((childSnapshot) => {
-                    const quoteData = childSnapshot.val();
-                    const quoteId = childSnapshot.key;
-                    const quoteElement = document.createElement('div');
-                    quoteElement.className = 'quote-item';
-                    quoteElement.innerHTML = `
-                        <h3>${quoteData.companyName}</h3>
-                        <p>Contact: ${quoteData.contactName}</p>
-                        <p>Email: ${quoteData.email}</p>
-                        <p>Phone: ${quoteData.phone}</p>
-                        <p>Project Details: ${quoteData.projectDetails}</p>
-                        <p>Date: ${new Date(quoteData.timestamp).toLocaleString()}</p>
-                    `;
-                    quotesList.appendChild(quoteElement);
-                });
-            });
+            await push(quotesRef, formData);
+            quoteForm.reset();
+            alert('Quote request submitted successfully!');
+        } catch (error) {
+            console.error('Error submitting quote:', error);
+            alert('Error submitting quote. Please try again.');
         }
+    });
+}
 
-        // Add catalog functionality
-        const catalogRef = ref(database, 'catalog');
-        
-        // Load catalog items
-        function loadCatalog() {
-            const catalogContainer = document.getElementById('catalogItems');
-            if (!catalogContainer) return;
-            
-            onValue(catalogRef, (snapshot) => {
-                catalogContainer.innerHTML = '';
-                
-                snapshot.forEach((childSnapshot) => {
-                    const item = childSnapshot.val();
-                    const itemId = childSnapshot.key;
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'catalog-item';
-                    itemElement.innerHTML = `
-                        <img src="${item.imageUrl}" alt="${item.name}">
-                        <h3>${item.name}</h3>
-                        <p>${item.description}</p>
-                    `;
-                    catalogContainer.appendChild(itemElement);
-                });
-            });
-        }
+// Add customer reviews
+const reviews = [
+    {
+        name: "David Chen",
+        company: "MedTech Innovations",
+        rating: 5,
+        text: "Outstanding precision on our medical device components. Their attention to detail and quality control is exceptional. Consistently meets our strict tolerances."
+    },
+    {
+        name: "Sarah Johnson",
+        company: "Aerospace Dynamics",
+        rating: 5,
+        text: "We've been working with them for over 5 years. Their expertise in aerospace components is unmatched. Perfect execution on complex parts every time."
+    },
+    {
+        name: "Michael Rodriguez",
+        company: "Industrial Solutions Inc.",
+        rating: 5,
+        text: "Excellent service and exceptional quality. Their team helped us optimize our designs for manufacturing, saving both time and costs."
+    },
+    {
+        name: "Emily Thompson",
+        company: "Defense Systems Ltd.",
+        rating: 5,
+        text: "Reliable partner for precision components. Their quality control and documentation are impeccable. Always delivers on schedule."
+    },
+    {
+        name: "Robert Wilson",
+        company: "Automotive Excellence",
+        rating: 5,
+        text: "Top-notch machining capabilities. They handle our high-volume orders with consistent quality and on-time delivery."
+    },
+    {
+        name: "Jennifer Lee",
+        company: "Biotech Solutions",
+        rating: 5,
+        text: "Incredible attention to detail on our specialized medical equipment parts. Their expertise in complex geometries is impressive."
+    },
+    {
+        name: "James Anderson",
+        company: "Precision Robotics",
+        rating: 5,
+        text: "Outstanding work on our custom automation components. Their team's technical knowledge and problem-solving skills are exceptional."
+    },
+    {
+        name: "Lisa Martinez",
+        company: "Energy Systems Corp",
+        rating: 5,
+        text: "Excellent partner for our power generation components. Their quality and reliability are consistently outstanding."
+    }
+];
 
-        // Handle catalog form submission
-        const catalogForm = document.getElementById('catalogForm');
-        if (catalogForm) {
-            catalogForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    const formData = {
-                        name: catalogForm.elements['itemName'].value,
-                        description: catalogForm.elements['itemDescription'].value,
-                        imageUrl: catalogForm.elements['itemImageUrl'].value,
-                        timestamp: serverTimestamp()
-                    };
+// Add reviews to the carousel
+const reviewCarousel = document.querySelector('.review-carousel');
+reviews.forEach(review => {
+    const reviewCard = document.createElement('div');
+    reviewCard.className = 'review-card';
+    reviewCard.innerHTML = `
+        <h3>${review.name}</h3>
+        <p>${review.company}</p>
+        <div class="stars">${'★'.repeat(review.rating)}</div>
+        <p>${review.text}</p>
+    `;
+    reviewCarousel.appendChild(reviewCard);
+});
 
-                    await push(catalogRef, formData);
-                    catalogForm.reset();
-                    alert('Catalog item added successfully!');
-                } catch (error) {
-                    console.error('Error adding catalog item:', error);
-                    alert('Error adding catalog item. Please try again.');
-                }
-            });
-        }
+// Mobile menu toggle
+const menuToggle = document.createElement('div');
+menuToggle.className = 'menu-toggle';
+menuToggle.innerHTML = `
+    <span></span>
+    <span></span>
+    <span></span>
+`;
 
-        // Handle quote form submission
-        const quoteForm = document.getElementById('quoteForm');
-        if (quoteForm) {
-            quoteForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    const formData = {
-                        companyName: quoteForm.elements['companyName'].value,
-                        contactName: quoteForm.elements['contactName'].value,
-                        email: quoteForm.elements['email'].value,
-                        phone: quoteForm.elements['phone'].value,
-                        projectDetails: quoteForm.elements['projectDetails'].value,
-                        timestamp: serverTimestamp()
-                    };
+const nav = document.querySelector('nav');
+nav.insertBefore(menuToggle, nav.firstChild);
 
-                    const quotesRef = ref(database, 'quotes');
-                    await push(quotesRef, formData);
-                    quoteForm.reset();
-                    alert('Quote request submitted successfully!');
-                } catch (error) {
-                    console.error('Error submitting quote:', error);
-                    alert('Error submitting quote. Please try again.');
-                }
-            });
-        }
+const navLinks = document.querySelector('.nav-links');
+menuToggle.addEventListener('click', () => {
+    navLinks.classList.toggle('active');
+    menuToggle.classList.toggle('active');
+});
 
-        // Add customer reviews
-        const reviews = [
-            {
-                name: "David Chen",
-                company: "MedTech Innovations",
-                rating: 5,
-                text: "Outstanding precision on our medical device components. Their attention to detail and quality control is exceptional. Consistently meets our strict tolerances."
-            },
-            {
-                name: "Sarah Johnson",
-                company: "Aerospace Dynamics",
-                rating: 5,
-                text: "We've been working with them for over 5 years. Their expertise in aerospace components is unmatched. Perfect execution on complex parts every time."
-            },
-            {
-                name: "Michael Rodriguez",
-                company: "Industrial Solutions Inc.",
-                rating: 5,
-                text: "Excellent service and exceptional quality. Their team helped us optimize our designs for manufacturing, saving both time and costs."
-            },
-            {
-                name: "Emily Thompson",
-                company: "Defense Systems Ltd.",
-                rating: 5,
-                text: "Reliable partner for precision components. Their quality control and documentation are impeccable. Always delivers on schedule."
-            },
-            {
-                name: "Robert Wilson",
-                company: "Automotive Excellence",
-                rating: 5,
-                text: "Top-notch machining capabilities. They handle our high-volume orders with consistent quality and on-time delivery."
-            },
-            {
-                name: "Jennifer Lee",
-                company: "Biotech Solutions",
-                rating: 5,
-                text: "Incredible attention to detail on our specialized medical equipment parts. Their expertise in complex geometries is impressive."
-            },
-            {
-                name: "James Anderson",
-                company: "Precision Robotics",
-                rating: 5,
-                text: "Outstanding work on our custom automation components. Their team's technical knowledge and problem-solving skills are exceptional."
-            },
-            {
-                name: "Lisa Martinez",
-                company: "Energy Systems Corp",
-                rating: 5,
-                text: "Excellent partner for our power generation components. Their quality and reliability are consistently outstanding."
-            }
-        ];
+// Close menu when clicking a link
+navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+        menuToggle.classList.remove('active');
+    });
+});
 
-        const reviewCarousel = document.querySelector('.review-carousel');
-        reviews.forEach(review => {
-            const reviewCard = document.createElement('div');
-            reviewCard.className = 'review-card';
-            reviewCard.innerHTML = `
-                <h3>${review.name}</h3>
-                <p>${review.company}</p>
-                <div class="stars">${'★'.repeat(review.rating)}</div>
-                <p>${review.text}</p>
-            `;
-            reviewCarousel.appendChild(reviewCard);
-        }); 
-
-        // Mobile menu toggle
-        const menuToggle = document.createElement('div');
-        menuToggle.className = 'menu-toggle';
-        menuToggle.innerHTML = `
-            <span></span>
-            <span></span>
-            <span></span>
-        `;
-
-        const nav = document.querySelector('nav');
-        nav.insertBefore(menuToggle, nav.firstChild);
-
-        const navLinks = document.querySelector('.nav-links');
-        menuToggle.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-            menuToggle.classList.toggle('active');
-        });
-
-        // Close menu when clicking a link
-        navLinks.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                navLinks.classList.remove('active');
-                menuToggle.classList.remove('active');
-            });
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!nav.contains(e.target)) {
-                navLinks.classList.remove('active');
-                menuToggle.classList.remove('active');
-            }
-        });
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!nav.contains(e.target)) {
+        navLinks.classList.remove('active');
+        menuToggle.classList.remove('active');
+    }
+});
+         
     </script>
 </head>
 <body>
@@ -717,6 +598,12 @@ if (quoteForm) {
 
     <section id="catalog" class="catalog">
         <h2>Our Catalog</h2>
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="catalogSearch" placeholder="Search catalog...">
+                <button id="searchButton">Search</button>
+            </div>
+        </div>
         <div id="catalogItems" class="catalog-grid">
             <!-- Catalog items will be loaded here -->
         </div>
