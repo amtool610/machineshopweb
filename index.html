@@ -44,7 +44,7 @@
         /* Catalog Section Styles */
         .catalog {
             padding: 4rem 2rem;
-            background: #000000;
+            background: #2c2b2b;
         }
 
         .catalog-grid {
@@ -58,7 +58,7 @@
             background: rgb(0, 0, 0);
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(238, 237, 237, 0.1);
             transition: transform 0.3s ease;
         }
 
@@ -67,6 +67,7 @@
         }
 
         .catalog-item img {
+            opacity: 1 !important;
             width: 100%;
             height: 200px;
             object-fit: cover;
@@ -97,7 +98,7 @@
 
         .catalog-management h3 {
             margin-bottom: 1.5rem;
-            color: #333;
+            color: #eee8e8;
         }
 
         .catalog-management form {
@@ -215,7 +216,7 @@ onAuthStateChanged(auth, (user) => {
         adminLink.textContent = "Logout";
         adminLink.onclick = () => signOut(auth);
         loadQuotes();
-        loadCatalog();
+        loadCatalog();  // Remove this line from here
     } else {
         adminDashboard.style.display = "none";
         adminLink.textContent = "Admin";
@@ -267,102 +268,105 @@ function loadCatalog() {
     
     // Function to load items with pagination and search
     async function loadItems(searchTerm = '', page = 1) {
-        if (isLoading) return;
-        isLoading = true;
-        
-        try {
-            // Show loading indicator
-            if (page === 1) {
-                catalogContainer.innerHTML = '<div class="loading">Loading...</div>';
-            }
-            
-           // Build the query
-        let baseQuery = catalogRef;
-        
-        // Add search filter if search term exists
-        if (searchTerm) {
-            baseQuery = query(
-                baseQuery,
-                orderByChild('name'),
-                startAt(searchTerm),
-                endAt(searchTerm + '\uf8ff'),
-                limitToFirst(itemsPerPage * page)
-            );
-        } else {
-            baseQuery = query(
-                baseQuery,
-                limitToFirst(itemsPerPage * page)
-            );
+    if (isLoading) return;
+    isLoading = true;
+    
+    try {
+        // Show loading indicator
+        if (page === 1) {
+            catalogContainer.innerHTML = '<div class="loading">Loading...</div>';
         }
-            
-           // Get the data
-        const snapshot = await get(baseQuery);
-            
-            // Clear container only on first page load
-            if (page === 1) {
-                catalogContainer.innerHTML = '';
-            }
-            
-            // Handle no results
-            if (!snapshot.exists()) {
-                if (page === 1) {
-                    catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">No results found</p>';
-                }
-                return;
-            }
-            
-            // Process and display items
-            snapshot.forEach((childSnapshot) => {
-                const item = childSnapshot.val();
-                const itemElement = document.createElement('div');
-                itemElement.className = 'catalog-item';
-                
-                // Create image with lazy loading
-                const img = document.createElement('img');
-                img.loading = 'lazy';
-                img.src = item.imageUrl;
-                img.alt = item.name;
-                
-                // Add error handling for images
-                img.onerror = () => {
-                    img.src = 'placeholder.png'; // Fallback image
-                };
-                
-                itemElement.innerHTML = `
-                    <h3>${item.name}</h3>
-                    <p>${item.description}</p>
-                `;
-                itemElement.insertBefore(img, itemElement.firstChild);
-                
-                catalogContainer.appendChild(itemElement);
-            });
-            
-            // Add load more button if there might be more results
-            if (snapshot.size === itemsPerPage * page) {
-                // Remove existing load more button if it exists
-                const existingBtn = document.querySelector('.load-more-btn');
-                if (existingBtn) {
-                    existingBtn.remove();
-                }
-                
-                const loadMoreBtn = document.createElement('button');
-                loadMoreBtn.className = 'load-more-btn';
-                loadMoreBtn.textContent = 'Load More';
-                loadMoreBtn.onclick = () => {
-                    currentPage++;
-                    loadItems(lastSearchTerm, currentPage);
-                };
-                catalogContainer.appendChild(loadMoreBtn);
-            }
-            
-        } catch (error) {
-            console.error('Error loading catalog items:', error);
-            catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">Error loading items. Please try again.</p>';
-        } finally {
-            isLoading = false;
+        
+        // Get all items
+        const snapshot = await get(catalogRef);
+        
+        // Clear container only on first page load
+        if (page === 1) {
+            catalogContainer.innerHTML = '';
         }
+        
+        // Handle no results
+        if (!snapshot.exists()) {
+            if (page === 1) {
+                catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">No results found</p>';
+            }
+            return;
+        }
+        
+        // Filter items based on search term
+        let filteredItems = [];
+        snapshot.forEach((childSnapshot) => {
+            const item = childSnapshot.val();
+            const searchTermLower = searchTerm.toLowerCase();
+            
+            // Check if search term matches name or description
+            if (!searchTerm || 
+                item.name.toLowerCase().includes(searchTermLower) || 
+                item.description.toLowerCase().includes(searchTermLower)) {
+                filteredItems.push({
+                    id: childSnapshot.key,
+                    ...item
+                });
+            }
+        });
+        
+        // Apply pagination
+        const startIndex = 0;
+        const endIndex = page * itemsPerPage;
+        const paginatedItems = filteredItems.slice(startIndex, endIndex);
+        
+        // Display filtered and paginated items
+        paginatedItems.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'catalog-item';
+            
+            // Create image with lazy loading
+            const img = document.createElement('img');
+            img.loading = 'lazy';
+            img.src = item.imageUrl;
+            img.alt = item.name;
+            img.style.opacity = '1';
+            
+            // Add error handling for images
+            img.onerror = () => {
+                img.src = 'placeholder.png';
+                img.style.opacity = '1';
+            };
+            
+            itemElement.innerHTML = `
+                <h3>${item.name}</h3>
+                <p>${item.description}</p>
+            `;
+            itemElement.insertBefore(img, itemElement.firstChild);
+            
+            catalogContainer.appendChild(itemElement);
+        });
+        
+        // Add load more button if there are more results
+        if (filteredItems.length > endIndex) {
+            // Remove existing load more button if it exists
+            const existingBtn = document.querySelector('.load-more-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.textContent = 'Load More';
+            loadMoreBtn.onclick = () => {
+                currentPage++;
+                loadItems(lastSearchTerm, currentPage);
+            };
+            catalogContainer.appendChild(loadMoreBtn);
+        }
+        
+    } catch (error) {
+        console.error('Error loading catalog items:', error);
+        catalogContainer.innerHTML = '<p style="text-align: center; color: white; grid-column: 1/-1;">Error loading items. Please try again.</p>';
+    } finally {
+        isLoading = false;
     }
-
+}
     // Debounce function to prevent too many search requests
     function debounce(func, wait) {
         let timeout;
@@ -587,6 +591,11 @@ document.addEventListener('click', (e) => {
         navLinks.classList.remove('active');
         menuToggle.classList.remove('active');
     }
+});
+
+// Initialize catalog for all users
+document.addEventListener('DOMContentLoaded', () => {
+    loadCatalog();
 });
          
     </script>
